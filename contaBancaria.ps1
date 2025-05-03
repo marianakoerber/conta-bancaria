@@ -1,43 +1,64 @@
+<#
+.SYNOPSIS
+    Simulação de uma conta bancária usando PowerShell com operações básicas.
+
+.DESCRIPTION
+    O script cria um objeto de conta bancária que permite depositar, sacar
+    e visualizar o saldo, utilizando um objeto com métodos encapsulados.
+#>
+
 function Nova-ContaBancaria {
     param (
-        [string]$Nome,
+        [string]$NomeTitular,
         [double]$SaldoInicial
     )
 
+    if ($SaldoInicial -lt 0) {
+        throw "Saldo inicial não pode ser negativo."
+    }
+
     $conta = [PSCustomObject]@{
-        Nome  = $Nome
-        Saldo = $SaldoInicial
+        NomeTitular = $NomeTitular
+        Saldo       = $SaldoInicial
 
         Depositar = {
             param ($valor)
+            if ($valor -le 0) {
+                Write-Output "Valor inválido para depósito."
+                return
+            }
             $this.Saldo += $valor
-            Write-Host "Depósito de R$$valor realizado."
-            Write-Host "Novo saldo: R$$($this.Saldo)"
+            Write-Output ("Depósito de R${0:N2} realizado." -f $valor)
+            $this.MostrarSaldo.Invoke()
         }
 
         Sacar = {
             param ($valor)
+            if ($valor -le 0) {
+                Write-Output "Valor inválido para saque."
+                return
+            }
+
             if ($valor -le $this.Saldo) {
                 $this.Saldo -= $valor
-                Write-Host "Saque de R$$valor realizado."
-                Write-Host "Saldo atual: R$$($this.Saldo)"
+                Write-Output ("Saque de R${0:N2} realizado." -f $valor)
             } else {
-                Write-Host "Saldo insuficiente."
-                Write-Host "Operação não realizada."
+                Write-Output "Saldo insuficiente. Operação não realizada."
             }
+
+            $this.MostrarSaldo.Invoke()
         }
 
         MostrarSaldo = {
-            Write-Host "Nome da conta: $($this.Nome)"
-            Write-Host "Saldo: R$$($this.Saldo)"
+            Write-Output ("Titular: {0} | Saldo atual: R${1:N2}" -f $this.NomeTitular, $this.Saldo)
         }
     }
 
     return $conta
 }
 
-# Execução
-$conta = Nova-ContaBancaria -Nome "Joao" -SaldoInicial 500.00
+# --- Execução de exemplo ---
+$conta = Nova-ContaBancaria -NomeTitular "João" -SaldoInicial 500.00
 $conta.MostrarSaldo.Invoke()
 $conta.Depositar.Invoke(200.0)
 $conta.Sacar.Invoke(1000.0)
